@@ -1,0 +1,7 @@
+# Direct dependencies inferred from source; versions are not yet validated/pinned.
+numpy
+tensorflow
+scipy
+scikit-learn
+networkx
+matplotlib
