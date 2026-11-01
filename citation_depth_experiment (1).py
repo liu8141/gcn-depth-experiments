@@ -383,8 +383,8 @@ class GCN(tf.keras.Model):
         )
 
         # =====================================================
-        # 只保留无向候选边的上三角
-        # 每条无向边只学习一个参数
+        # Keep only the upper triangle of undirected candidate edges.
+        # Learn one parameter per undirected edge.
         # =====================================================
         adj_indices = tf.cast(
             self.candidate_adj.indices,
@@ -409,7 +409,7 @@ class GCN(tf.keras.Model):
         )
 
         # =====================================================
-        # 初始 edge logits
+        # Initial edge logits
         # =====================================================
         if edge_init_logits is None:
             edge_init_logits = (
@@ -425,14 +425,14 @@ class GCN(tf.keras.Model):
             self.dtype_
         )
 
-        # 用来区分：
-        # 原始边 / 新候选边
+        # Distinguish between:
+        # Original edges / new candidate edges
         self.original_edge_mask = (
             self.edge_init_logits > 0.0
         )
 
         # =====================================================
-        # 每个 hidden layer 对应一个 d_i
+        # Assign one d_i to each hidden layer.
         # =====================================================
         self.d_params = []
 
@@ -487,7 +487,7 @@ class GCN(tf.keras.Model):
             (None, hidden_dim)
         )
 
-        # 保留你原来的 layer_groups 名称
+        # Preserve the existing layer_groups name.
         self.layer_groups = [
             [self.d_params[i]]
             +
@@ -512,7 +512,7 @@ class GCN(tf.keras.Model):
 
         intermediate_outputs = {}
 
-        # 从原始初始化 logits 开始
+        # Start from the initial logits.
         current_logits = (
             self.edge_init_logits
         )
@@ -522,10 +522,10 @@ class GCN(tf.keras.Model):
         # =====================================================
         # Hidden layers
         #
-        # 第1层:
+        # Layer 1:
         # z1 = z0 + d1
         #
-        # 第2层:
+        # Layer 2:
         # z2 = z1 + d2
         #    = z0 + d1 + d2
         #
@@ -563,7 +563,7 @@ class GCN(tf.keras.Model):
         # =====================================================
         # Output layer
         #
-        # 使用最后一次累积后的 graph
+        # Use the graph after the final accumulation.
         # =====================================================
         D = adj_preprocess(
             current_adj
@@ -601,8 +601,8 @@ class GCN(tf.keras.Model):
         threshold=0.5
     ):
 
-        # 核心：
-        # 当前 logits = 上一层 logits + 当前层 d
+        # Core update:
+        # Current logits = previous-layer logits + current-layer d
         logits = (
             prev_logits
             +
@@ -613,7 +613,7 @@ class GCN(tf.keras.Model):
             logits
         )
 
-        # Forward 用 hard 0/1
+        # Use hard binary values (0/1) in the forward pass.
         hard_gate = tf.cast(
             edge_prob > threshold,
             tf.float32
@@ -636,8 +636,8 @@ class GCN(tf.keras.Model):
             )
         )
 
-        # 无向图：
-        # 补充反向边
+        # Undirected graph:
+        # Add reverse edges.
         reverse_indices = tf.stack(
             [
                 self.upper_edge_indices[:, 1],
@@ -682,7 +682,7 @@ class GCN(tf.keras.Model):
         threshold=0.5
     ):
 
-        # 与 forward 完全一致
+        # Match the forward pass exactly.
         logits = self.edge_init_logits
 
         if layer_index is None:
@@ -695,7 +695,7 @@ class GCN(tf.keras.Model):
                 ]
             )
 
-        # 累积
+        # Accumulate.
         for d in params:
             logits = (
                 logits
@@ -838,7 +838,7 @@ class GCN(tf.keras.Model):
             tf.add_n(regs)
         )
 
-    # 保留原来的函数名
+    # Preserve the existing function name.
     def apply_upper_triangle_mask(
         self
     ):
@@ -1131,8 +1131,8 @@ def train_ls_gcn(
         )
     )
 
-    # 先真正 forward 一次
-    # 避免 optimizer build 时模型变量状态有问题
+    # Run a forward pass first.
+    # Ensure model variables are initialized before building the optimizer.
     _ = model(features)
 
     optimizer.build(
@@ -1153,7 +1153,7 @@ def train_ls_gcn(
         for var in d_params
     }
 
-    # 保留原来 layer_names
+    # Preserve the existing layer_names.
     layer_names = get_layer_names(
         NUM_LAYERS
     )
@@ -1179,7 +1179,7 @@ def train_ls_gcn(
 
         # =====================================================
         # Step 1
-        # 更新结构参数 d_i
+        # Update the structure parameters d_i.
         # =====================================================
         for i, d_param in enumerate(
             d_params
@@ -1194,7 +1194,7 @@ def train_ls_gcn(
                     )
                 )
 
-                # 当前 hidden layer
+                # Current hidden layer
                 H_partial = tf.gather(
                     intermediate_outputs_train[
                         layer_names[i]
@@ -1220,7 +1220,7 @@ def train_ls_gcn(
                 )
 
                 # =============================================
-                # 当前 hidden layer LS2
+                # LS2 for the current hidden layer
                 # =============================================
                 ls2_hidden = (
                     differentiable_LS2(
@@ -1231,7 +1231,7 @@ def train_ls_gcn(
                 )
 
                 # =============================================
-                # 当前 d_i regularization
+                # Regularization for the current d_i
                 # =============================================
                 nuclear_reg = (
                     model
@@ -1241,10 +1241,10 @@ def train_ls_gcn(
                 )
 
                 # =============================================
-                # 最后一个 d
+                # Final d
                 #
-                # 同时优化：
-                # 最后一层 hidden LS
+                # Jointly optimize:
+                # LS for the final hidden layer
                 # +
                 # output LS
                 # =============================================
@@ -1300,9 +1300,9 @@ def train_ls_gcn(
                 # =============================================
                 # Structure loss
                 #
-                # 注意：
-                # 这里不要再调用一次 loss_lsm()
-                # 否则会把上面的 output LS 覆盖掉
+                # Note:
+                # Do not call loss_lsm() again here.
+                # Doing so would overwrite the output LS computed above.
                 # =============================================
                 loss_d = (
                     ce
@@ -1315,7 +1315,7 @@ def train_ls_gcn(
                 )
 
             # =============================================
-            # 当前只更新 d_i
+            # Update only d_i at this step.
             # =============================================
             grads_d = tape.gradient(
                 loss_d,
@@ -1344,7 +1344,7 @@ def train_ls_gcn(
 
         # =====================================================
         # Step 2
-        # 更新 GCN 网络权重
+        # Update the GCN network weights.
         # =====================================================
         w_params = [
             var
@@ -1610,7 +1610,7 @@ def train_ls_gcn(
     # =========================================================
     # Return
     #
-    # 字段名全部保持你原来的
+    # Preserve all existing field names.
     # =========================================================
     return {
 

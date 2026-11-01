@@ -1,30 +1,30 @@
-# GCN 深度对比实验
+# GCN Depth Comparison Experiments
 
-基于 TensorFlow 的图神经网络实验代码，包含 Cora、PubMed 和 CiteSeer 数据集实验，以及线性可分性指标计算。
+TensorFlow-based graph neural network experiments on Cora, PubMed, and CiteSeer, including linear separability metrics.
 
-## 文件说明
+## Files
 
-| 文件 | 用途 |
+| File | Purpose |
 | --- | --- |
-| `cora_depth_experiment.py` | Cora 实验 |
-| `citation_depth_experiment (1).py` | PubMed / CiteSeer 实验 |
-| `Linear_Separability_numpy_mul.py` | 线性可分性指标计算 |
-| `run_depths (1).py` | 按层数和随机种子批量运行 Cora |
+| `cora_depth_experiment.py` | Cora experiments |
+| `citation_depth_experiment (1).py` | PubMed / CiteSeer experiments |
+| `Linear_Separability_numpy_mul.py` | Linear separability metrics |
+| `run_depths (1).py` | Batch Cora experiments across depths and random seeds |
 
-## 安装
+## Installation
 
-在项目目录创建 Python 虚拟环境并安装依赖（以下命令适用于 Windows PowerShell）：
+Create a Python virtual environment in the project directory and install dependencies (Windows PowerShell):
 
 ```powershell
 python -m venv .venv
 .\.venv\Scripts\python.exe -m pip install -r requirements.txt
 ```
 
-依赖清单根据源码导入整理，尚未锁定经过完整训练验证的版本。Python 和 TensorFlow 版本需相互兼容。
+Dependencies are inferred from source imports. Versions have not yet been pinned or validated through a complete training run. Use compatible Python and TensorFlow versions.
 
-## 运行
+## Running Experiments
 
-请从项目根目录运行。首次运行会联网下载对应数据集。
+Run commands from the project root. Datasets are downloaded on the first run.
 
 ### Cora
 
@@ -34,20 +34,20 @@ $env:GCN_SEED = "42"
 .\.venv\Scripts\python.exe cora_depth_experiment.py
 ```
 
-默认层数为 16，随机种子为 42，训练轮数为 300。结果保存至 `results_pkls/`。
+Defaults are 16 layers, random seed 42, and 300 epochs. Results are saved to `results_pkls/`.
 
-批量运行 Cora：
+Batch execution:
 
 ```powershell
 .\.venv\Scripts\python.exe "run_depths (1).py" --layers 2 4 6 8 --seeds 42
 ```
 
-批量运行的日志、指标和汇总表保存在 `depth_runs/`。当前批量脚本按 Cora 结果命名查找文件，不适用于 PubMed / CiteSeer 脚本。
+Logs, metrics, and the summary table are saved to `depth_runs/`. The batch runner searches for Cora-specific result filenames and does not support the PubMed / CiteSeer script.
 
 ### PubMed / CiteSeer
 
 ```powershell
-$env:GCN_DATASET = "pubmed" # 可改为 citeseer
+$env:GCN_DATASET = "pubmed" # Change to citeseer as needed.
 $env:GCN_LAYERS = "4"
 $env:GCN_SEED = "42"
 $env:GCN_EPOCHS = "300"
@@ -55,11 +55,11 @@ $env:GCN_RESULT_DIR = "results_pkls/pubmed_layers4_seed42"
 .\.venv\Scripts\python.exe "citation_depth_experiment (1).py"
 ```
 
-数据默认缓存至 `data/`，可通过 `GCN_DATA_DIR` 修改。结果写入 `GCN_RESULT_DIR/metrics.pkl`；每次实验应指定不同目录，避免覆盖。
+Datasets are cached in `data/` by default; override this location with `GCN_DATA_DIR`. Results are written to `GCN_RESULT_DIR/metrics.pkl`. Use a separate result directory for each experiment to avoid overwriting previous results.
 
-## 说明
+## Notes
 
-- 数据按随机种子划分为训练集 70%、验证集 10%、测试集 20%。
-- 使用验证准确率选择模型检查点，再评估测试集。
-- 数据集、训练产物及本地环境不提交到 Git。
-- 本仓库尚未添加开源许可证。
+- Data is randomly split into 70% training, 10% validation, and 20% test sets using the configured seed.
+- Checkpoints are selected by validation accuracy before evaluating the test set.
+- Downloaded datasets, training outputs, and local environments are excluded from Git.
+- This repository does not currently include an open-source license.
